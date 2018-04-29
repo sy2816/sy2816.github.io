@@ -1,0 +1,202 @@
+---
+title: "Importance of Scheduling for Fantasty Football"
+author: "Stephen York"
+output: html_document
+date: 2017-12-17T21:13:14-05:00
+categories: ["R"]
+tags: ["fantasy football", "simulation", "highcharter"]
+---
+
+### Motivation
+
+
+I work with almost exclusively other economists, so you can imagine our ability to try and quantify the tiniest of things -- especially in the realm of fantasy football. One topic that commonly comes up for us when discussing our work league is the extent that some teams get "unlucky" by continually having their weekly matchup against teams that play abnormally well against only you. This leads to a high "Points Against" amount and allegedly turning what should have been a promising season into one of fustration and shame. This "luck factor" undoubtedly plays a large role in deciding the fate of your fantasty team, so I attempted to quantify it.
+
+I decided to quantify it by creating simulations of how a team would do using different schedules. It is not unreasonable to imagine a scenario where Team A scores more points than Team B every week, EXCEPT for the one week Team A is matched up aginast Team B. Fantasy football is interesting in the fact that who you play against does not really affect how a team scores. So, simply based on how the schedule is generated, a team can greatly benefit from more or less wins than what one would normally expect depending on the timing of certain matchups.
+
+To analyze how schedules could affect a team's record, I created code in R to do the following:
+
+1. Create a function that randomly generates a schedule for a team and records the number of wins the team would get with that particular schedule using the same scoring results each team did for the respective weeks. In other words, if Team C scored 121.4 points in Week 2 of the season, I use 121.4 points as the amount Team C scored for week 2 for the generated schedule. This is also done to the teams Team C is playing, so the only variable that changes week to week is matchup, the teams' scores for the respective weeks remain the same.
+
+2. Run that function 10,000 times and record the number of wins the team recieved in each simulation. Then I can take the average, minimum, and maximum number of wins using data from all 10,000 simulations.
+
+3. Plot a chart showing the distribution of the number of wins by percent chance to evaluate the likelihood of winning a certain number of games.
+
+
+```{r setup, echo = FALSE, results="hide"}
+suppressMessages(library(highcharter))
+suppressMessages(library(dplyr))
+data <- readxl::read_excel("C:/Users/Stephen/Documents/GitHub/Fantasy-Football-Schedule-Analysis/FF.xlsx", sheet = 1)
+```
+
+### The Data
+
+Before I dive too deep below is the data that I am working with. It shows the actual results my 2017 work league that I'm in.
+
+
+
+| team    | week1 | week2 | week3 | week4 | week5 | week6 | week7 | week8 | week9 | week10 | week11 | 
+|---------|-------|-------|-------|-------|-------|-------|-------|-------|-------|--------|--------| 
+| Alex    | 122.3 | 123.9 | 132.6 | 108.2 | 68.8  | 63    | 87.1  | 54.7  | 101.5 | 65.2   | 92     | 
+| Neil    | 120   | 119.5 | 110   | 74.3  | 95.7  | 117.4 | 127.1 | 103.1 | 52.8  | 155.2  | 122.6  | 
+| Stephen | 70.8  | 73.7  | 122   | 79.3  | 111   | 131.7 | 70.3  | 117.4 | 80.9  | 63.4   | 107.8  | 
+| Tommy   | 109.2 | 98.2  | 89    | 92.8  | 124   | 126.9 | 90.8  | 103.8 | 97.2  | 90.3   | 118    | 
+| Leigh   | 81.8  | 96.6  | 91.8  | 98.4  | 123.8 | 97.7  | 94.6  | 83.1  | 126.1 | 75     | 90     | 
+| Kyle    | 82.8  | 90.4  | 125.7 | 112.9 | 81    | 91.7  | 95.4  | 123.3 | 115.9 | 58.2   | 115.3  | 
+| Charlie | 82.2  | 75.7  | 68.6  | 95.1  | 81.9  | 51.3  | 95.3  | 80.1  | 102.1 | 102.3  | 51.8   | 
+| Kelsey  | 88.1  | 118.6 | 74.5  | 125.1 | 100.7 | 91.6  | 82.2  | 122.1 | 111.1 | 74.9   | 106.9  | 
+| Sam     | 111.4 | 93.4  | 116   | 86.6  | 110.5 | 87.7  | 116.3 | 96.2  | 106.8 | 105.6  | 81.7   | 
+| Doug    | 64.2  | 89    | 71.1  | 104.6 | 111.6 | 99.5  | 84.2  | 126.5 | 81.2  | 106.3  | 94     | 
+| Cooper  | 72.3  | 109.8 | 134   | 116.2 | 88.4  | 98.9  | 97.4  | 97.3  | 93.3  | 65.5   | 107    | 
+| Erik    | 113.8 | 121.1 | 104.1 | 96.4  | 116.4 | 108.4 | 105.2 | 107.8 | 90.2  | 116.2  | 114.5  | 
+
+
+
+### Generating the random schedule
+
+Initially, I wanted to test the number of wins for every possible schedule combination possible my fantasy football league. After a couple of futile attempts at generating them, I quickly realized that the number of combinations would be astronommically large, so I settled with taking thousands of randomly generated schedules since it would give me the same conclusion and does not bias the results.
+
+Below is the code I used to create a function to randomly generate a schedule for a particular team in our twelve-team league. The way our league does its scheduling (all twelve teams play each team once for a total of eleven games) made this pretty straightforward. 
+
+```{r function}
+# x is player schedule is for, y is vector of all possible teams (including x)
+createSchedule <- function(x, y){
+teams <- y
+
+
+#Remove the team the schedule is for since they can't play them selves.
+teams <- as.character(teams[teams != x])
+
+possibleTeams <- teams
+
+schedule <- data.frame(week = c(1:11), player = NA, result = NA)
+
+for(i in c(1:11)){
+week <- i
+
+#Randomly selected one team from possibleTeams variable.
+matchup <- sample(possibleTeams, 1)
+schedule$player[i] <- matchup
+weekNum <- paste0("week", i)
+
+# Look up how much team x scored in week i.
+xScore <- data[which(data$team == x), weekNum] #Change week1 to corresponding week in iteration.
+
+# Look how much team x's matchup scored in week i.
+yScore <- data[which(data$team == matchup), weekNum] 
+
+# create flags for the team won or lost
+if (xScore > yScore){
+result <- "w"
+}else{
+result <- "l"
+}
+schedule$result[i] <- result
+
+#Remove the matchup from possible teams that could be selected.
+possibleTeams <- possibleTeams[possibleTeams != matchup] 
+}
+return(schedule) #Returns data frame of schedule, scores, and win/loss flag.
+}
+
+
+```
+
+
+To summarize how it works, I created a vector containing all names of all of the teams, and removed the name of the team for whom the schedule is being generated for. I then create an empty data.frame that I fill in using a `for` loop. The `for` loop will loop through 11 times (because there are 11 weeks in the season) and for each iteration I add a new row of data. Each row contains information on what week number it is, what the matchup is for a particular week, how the two teams scored that particular week, and whether the team for whom the schedule is being generated for won that particular week. 
+
+The end result is a data.frame 11 rows long for each week of the season. To comply with league scheduling, I did `possibleTeams <- possibleTeams[possibleTeams != matchup]` at the end of each loop to remove the selected matchup for the week from future consideration when I randomly selected another team. This way, I ensure that the team does not play another team more than once in the season.
+
+```{r resultTable,  results = "hide"}
+# Result of createSchedule() function
+"   week  player result
+1     1    Doug      w
+2     2   Leigh      l
+3     3    Kyle      l
+4     4    Neil      w
+5     5 Charlie      w
+6     6   Tommy      w
+7     7    Erik      l
+8     8  Cooper      w
+9     9  Kelsey      l
+10   10    Alex      l
+11   11     Sam      w"
+
+```
+
+### Running the simulations
+
+Now that I've generate a schedule in a format that is easy to determine the number of resulting win/losses, I can run it in a `for` loop to generate 10,000 schedules and keep a vector containing the number of wins a team gets in each iteration.
+
+
+```{r simulation}
+
+# create empty vector to add to
+iterations <- 10000
+wins <- rep(NA, iterations)
+
+teamName <- "Stephen"
+
+# Run 10000 simulations
+for (i in c(1:iterations)){
+  schedule <- createSchedule(teamName, data$team)
+  numWins <- length(grep(pattern = "w", schedule$result))
+  wins[i] <- numWins
+}
+
+```
+Once the simulation is done, I extracted some summary statistics,,,
+
+
+```{r summary statistics}
+# Calculate summary statistics
+minWins <- min(wins)
+maxWins <- max(wins)
+meanWins <- round(mean(wins), 1)
+
+```
+
+...and rearranged the data a bit more prior to graphing it.
+
+```{r sort}
+# Create frequency dataframe
+wins <- sort(wins)
+winDat <- data.frame(iteration = c(1:iterations),
+                     wins = wins)
+winCount <- dplyr::count(winDat, wins)
+winCount$percentage <- round(((winCount$n/iterations) * 100), 1)
+
+```
+
+I then use the `highcharter` package to create an interactive visual showing the distribution of the number of wins a team would recieve given 10,000 randomly generated schedules, as well as the mean number of wins.
+
+```{r graph}
+# Graph
+highchart() %>%
+  hc_add_series(data = winCount, "column", hcaes(x = wins, y = percentage), name = "Percent Chance")%>%
+  hc_xAxis(plotLines = list(list(
+    value = meanWins, color = "black", width = 1.5,
+    label = list(text = paste0("Average # of Wins - ", meanWins)),
+    zIndex = 5
+  )),
+  title = list(text = "Number of Wins")) %>%
+  hc_yAxis(labels = list(format = "{value} %")) %>%
+  hc_tooltip(
+    pointFormat = "Probability of winning {point.x} games: <b>{point.y}</b><br/>",
+    valueSuffix = ' %',
+    headerFormat = ""
+  ) %>%
+  hc_title(text = "Number of wins based on 10,000 simulations")
+  
+```
+
+
+### Interpretation and Conclusions
+
+The graph above shows the distribution of win given the 10,000 simulations. If for instance in the real world, my team won 3 games (something that I'm ashamed to admit actually happened),then I would say my team was fairly unlucky with how I was scheduled this year and tended to play against opponents on their "up weeks." The average number of wins over 10,000 simulations is a little over 4, and there is only about a 29 percent chance my team wouild have gotten 3 wins or less. That means that there is a 71 percent chance my team would get MORE than 3 wins.
+
+The result of the simulations also suggests that in approximately 0.1 percent of schedules (about 10 schedules of the 10,000), I would win 8 games, far overperforming the 3 win season I had in real life.
+
+Of course, interpreting these results all come with the caveats I mentioned earlier, the biggest of which is that the weekly scores are not actually as static as the simulations suggests. While player injuries and player projections (affecting how a player would start) are held constant, things like waiver order are not. This would particularily affect the leage I was in since our waiver order would reset each week based on your team's record. So if a team had a different schedule, it would affect which players they would pick up on the waivers, altering the scores. 
+
+With those caveats in mind, I still find this method of analysis interesting and still a good rule of thumb to determine how lucky a team is getting based on their ease of schedule.

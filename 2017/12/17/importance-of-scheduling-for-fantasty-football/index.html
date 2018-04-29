@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Hugo 0.38.2" />
+
+
+<title>Importance of Scheduling for Fantasty Football - Ramblings About Data</title>
+<meta property="og:title" content="Importance of Scheduling for Fantasty Football - Ramblings About Data">
+
+
+
+  
+
+
+
+
+
+
+
+
+<link href='//cdn.bootcss.com/highlight.js/9.11.0/styles/github.min.css' rel='stylesheet' type='text/css' />
+
+
+
+<link rel="stylesheet" href="/css/fonts.css" media="all">
+<link rel="stylesheet" href="/css/main.css" media="all">
+
+
+
+  </head>
+  <body>
+    <div class="wrapper">
+      <header class="header">
+        <nav class="nav">
+  <a href="/" class="nav-logo">
+    <img src="/images/logo.png"
+         width="50"
+         height="50"
+         alt="Logo">
+  </a>
+
+  <ul class="nav-links">
+    
+    <li><a href="/about/">About</a></li>
+    
+    <li><a href="https://github.com/sy2816">GitHub</a></li>
+    
+    <li><a href="https://twitter.com/rstudio">Twitter</a></li>
+    
+  </ul>
+</nav>
+
+      </header>
+
+
+<main class="content" role="main">
+
+  <article class="article">
+    
+    <span class="article-duration">8 min read</span>
+    
+
+    <h1 class="article-title">Importance of Scheduling for Fantasty Football</h1>
+
+    
+    <span class="article-date">2017/12/17</span>
+    
+
+    <div class="article-content">
+      <script src="/rmarkdown-libs/htmlwidgets/htmlwidgets.js"></script>
+<script src="/rmarkdown-libs/jquery/jquery.min.js"></script>
+<script src="/rmarkdown-libs/proj4js/proj4.js"></script>
+<link href="/rmarkdown-libs/highcharts/css/motion.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/highcharts/highstock.js"></script>
+<script src="/rmarkdown-libs/highcharts/highcharts-3d.js"></script>
+<script src="/rmarkdown-libs/highcharts/highcharts-more.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/annotations.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/broken-axis.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/data.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/drilldown.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/exporting.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/funnel.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/heatmap.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/map.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/no-data-to-display.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/offline-exporting.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/solid-gauge.js"></script>
+<script src="/rmarkdown-libs/highcharts/modules/treemap.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/annotations.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/draggable-legend.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/draggable-points.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/export-csv.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/grouped-categories.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/motion.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/pattern-fill-v2.js"></script>
+<script src="/rmarkdown-libs/highcharts/plugins/tooltip-delay.js"></script>
+<script src="/rmarkdown-libs/highcharts/custom/reset.js"></script>
+<script src="/rmarkdown-libs/highcharts/custom/symbols-extra.js"></script>
+<script src="/rmarkdown-libs/highcharts/custom/text-symbols.js"></script>
+<link href="/rmarkdown-libs/fontawesome/font-awesome.min.css" rel="stylesheet" />
+<link href="/rmarkdown-libs/htmlwdgtgrid/htmlwdgtgrid.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/highchart-binding/highchart.js"></script>
+
+
+<div id="motivation" class="section level3">
+<h3>Motivation</h3>
+<p>I work with almost exclusively other economists, so you can imagine our ability to try and quantify the tiniest of things – especially in the realm of fantasy football. One topic that commonly comes up for us when discussing our work league is the extent that some teams get “unlucky” by continually having their weekly matchup against teams that play abnormally well against only you. This leads to a high “Points Against” amount and allegedly turning what should have been a promising season into one of fustration and shame. This “luck factor” undoubtedly plays a large role in deciding the fate of your fantasty team, so I attempted to quantify it.</p>
+<p>I decided to quantify it by creating simulations of how a team would do using different schedules. It is not unreasonable to imagine a scenario where Team A scores more points than Team B every week, EXCEPT for the one week Team A is matched up aginast Team B. Fantasy football is interesting in the fact that who you play against does not really affect how a team scores. So, simply based on how the schedule is generated, a team can greatly benefit from more or less wins than what one would normally expect depending on the timing of certain matchups.</p>
+<p>To analyze how schedules could affect a team’s record, I created code in R to do the following:</p>
+<ol style="list-style-type: decimal">
+<li><p>Create a function that randomly generates a schedule for a team and records the number of wins the team would get with that particular schedule using the same scoring results each team did for the respective weeks. In other words, if Team C scored 121.4 points in Week 2 of the season, I use 121.4 points as the amount Team C scored for week 2 for the generated schedule. This is also done to the teams Team C is playing, so the only variable that changes week to week is matchup, the teams’ scores for the respective weeks remain the same.</p></li>
+<li><p>Run that function 10,000 times and record the number of wins the team recieved in each simulation. Then I can take the average, minimum, and maximum number of wins using data from all 10,000 simulations.</p></li>
+<li><p>Plot a chart showing the distribution of the number of wins by percent chance to evaluate the likelihood of winning a certain number of games.</p></li>
+</ol>
+</div>
+<div id="the-data" class="section level3">
+<h3>The Data</h3>
+<p>Before I dive too deep below is the data that I am working with. It shows the actual results my 2017 work league that I’m in.</p>
+<table>
+<thead>
+<tr class="header">
+<th>team</th>
+<th>week1</th>
+<th>week2</th>
+<th>week3</th>
+<th>week4</th>
+<th>week5</th>
+<th>week6</th>
+<th>week7</th>
+<th>week8</th>
+<th>week9</th>
+<th>week10</th>
+<th>week11</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Alex</td>
+<td>122.3</td>
+<td>123.9</td>
+<td>132.6</td>
+<td>108.2</td>
+<td>68.8</td>
+<td>63</td>
+<td>87.1</td>
+<td>54.7</td>
+<td>101.5</td>
+<td>65.2</td>
+<td>92</td>
+</tr>
+<tr class="even">
+<td>Neil</td>
+<td>120</td>
+<td>119.5</td>
+<td>110</td>
+<td>74.3</td>
+<td>95.7</td>
+<td>117.4</td>
+<td>127.1</td>
+<td>103.1</td>
+<td>52.8</td>
+<td>155.2</td>
+<td>122.6</td>
+</tr>
+<tr class="odd">
+<td>Stephen</td>
+<td>70.8</td>
+<td>73.7</td>
+<td>122</td>
+<td>79.3</td>
+<td>111</td>
+<td>131.7</td>
+<td>70.3</td>
+<td>117.4</td>
+<td>80.9</td>
+<td>63.4</td>
+<td>107.8</td>
+</tr>
+<tr class="even">
+<td>Tommy</td>
+<td>109.2</td>
+<td>98.2</td>
+<td>89</td>
+<td>92.8</td>
+<td>124</td>
+<td>126.9</td>
+<td>90.8</td>
+<td>103.8</td>
+<td>97.2</td>
+<td>90.3</td>
+<td>118</td>
+</tr>
+<tr class="odd">
+<td>Leigh</td>
+<td>81.8</td>
+<td>96.6</td>
+<td>91.8</td>
+<td>98.4</td>
+<td>123.8</td>
+<td>97.7</td>
+<td>94.6</td>
+<td>83.1</td>
+<td>126.1</td>
+<td>75</td>
+<td>90</td>
+</tr>
+<tr class="even">
+<td>Kyle</td>
+<td>82.8</td>
+<td>90.4</td>
+<td>125.7</td>
+<td>112.9</td>
+<td>81</td>
+<td>91.7</td>
+<td>95.4</td>
+<td>123.3</td>
+<td>115.9</td>
+<td>58.2</td>
+<td>115.3</td>
+</tr>
+<tr class="odd">
+<td>Charlie</td>
+<td>82.2</td>
+<td>75.7</td>
+<td>68.6</td>
+<td>95.1</td>
+<td>81.9</td>
+<td>51.3</td>
+<td>95.3</td>
+<td>80.1</td>
+<td>102.1</td>
+<td>102.3</td>
+<td>51.8</td>
+</tr>
+<tr class="even">
+<td>Kelsey</td>
+<td>88.1</td>
+<td>118.6</td>
+<td>74.5</td>
+<td>125.1</td>
+<td>100.7</td>
+<td>91.6</td>
+<td>82.2</td>
+<td>122.1</td>
+<td>111.1</td>
+<td>74.9</td>
+<td>106.9</td>
+</tr>
+<tr class="odd">
+<td>Sam</td>
+<td>111.4</td>
+<td>93.4</td>
+<td>116</td>
+<td>86.6</td>
+<td>110.5</td>
+<td>87.7</td>
+<td>116.3</td>
+<td>96.2</td>
+<td>106.8</td>
+<td>105.6</td>
+<td>81.7</td>
+</tr>
+<tr class="even">
+<td>Doug</td>
+<td>64.2</td>
+<td>89</td>
+<td>71.1</td>
+<td>104.6</td>
+<td>111.6</td>
+<td>99.5</td>
+<td>84.2</td>
+<td>126.5</td>
+<td>81.2</td>
+<td>106.3</td>
+<td>94</td>
+</tr>
+<tr class="odd">
+<td>Cooper</td>
+<td>72.3</td>
+<td>109.8</td>
+<td>134</td>
+<td>116.2</td>
+<td>88.4</td>
+<td>98.9</td>
+<td>97.4</td>
+<td>97.3</td>
+<td>93.3</td>
+<td>65.5</td>
+<td>107</td>
+</tr>
+<tr class="even">
+<td>Erik</td>
+<td>113.8</td>
+<td>121.1</td>
+<td>104.1</td>
+<td>96.4</td>
+<td>116.4</td>
+<td>108.4</td>
+<td>105.2</td>
+<td>107.8</td>
+<td>90.2</td>
+<td>116.2</td>
+<td>114.5</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="generating-the-random-schedule" class="section level3">
+<h3>Generating the random schedule</h3>
+<p>Initially, I wanted to test the number of wins for every possible schedule combination possible my fantasy football league. After a couple of futile attempts at generating them, I quickly realized that the number of combinations would be astronommically large, so I settled with taking thousands of randomly generated schedules since it would give me the same conclusion and does not bias the results.</p>
+<p>Below is the code I used to create a function to randomly generate a schedule for a particular team in our twelve-team league. The way our league does its scheduling (all twelve teams play each team once for a total of eleven games) made this pretty straightforward.</p>
+<pre class="r"><code># x is player schedule is for, y is vector of all possible teams (including x)
+createSchedule &lt;- function(x, y){
+teams &lt;- y
+
+
+#Remove the team the schedule is for since they can&#39;t play them selves.
+teams &lt;- as.character(teams[teams != x])
+
+possibleTeams &lt;- teams
+
+schedule &lt;- data.frame(week = c(1:11), player = NA, result = NA)
+
+for(i in c(1:11)){
+week &lt;- i
+
+#Randomly selected one team from possibleTeams variable.
+matchup &lt;- sample(possibleTeams, 1)
+schedule$player[i] &lt;- matchup
+weekNum &lt;- paste0(&quot;week&quot;, i)
+
+# Look up how much team x scored in week i.
+xScore &lt;- data[which(data$team == x), weekNum] #Change week1 to corresponding week in iteration.
+
+# Look how much team x&#39;s matchup scored in week i.
+yScore &lt;- data[which(data$team == matchup), weekNum] 
+
+# create flags for the team won or lost
+if (xScore &gt; yScore){
+result &lt;- &quot;w&quot;
+}else{
+result &lt;- &quot;l&quot;
+}
+schedule$result[i] &lt;- result
+
+#Remove the matchup from possible teams that could be selected.
+possibleTeams &lt;- possibleTeams[possibleTeams != matchup] 
+}
+return(schedule) #Returns data frame of schedule, scores, and win/loss flag.
+}</code></pre>
+<p>To summarize how it works, I created a vector containing all names of all of the teams, and removed the name of the team for whom the schedule is being generated for. I then create an empty data.frame that I fill in using a <code>for</code> loop. The <code>for</code> loop will loop through 11 times (because there are 11 weeks in the season) and for each iteration I add a new row of data. Each row contains information on what week number it is, what the matchup is for a particular week, how the two teams scored that particular week, and whether the team for whom the schedule is being generated for won that particular week.</p>
+<p>The end result is a data.frame 11 rows long for each week of the season. To comply with league scheduling, I did <code>possibleTeams &lt;- possibleTeams[possibleTeams != matchup]</code> at the end of each loop to remove the selected matchup for the week from future consideration when I randomly selected another team. This way, I ensure that the team does not play another team more than once in the season.</p>
+<pre class="r"><code># Result of createSchedule() function
+&quot;   week  player result
+1     1    Doug      w
+2     2   Leigh      l
+3     3    Kyle      l
+4     4    Neil      w
+5     5 Charlie      w
+6     6   Tommy      w
+7     7    Erik      l
+8     8  Cooper      w
+9     9  Kelsey      l
+10   10    Alex      l
+11   11     Sam      w&quot;</code></pre>
+</div>
+<div id="running-the-simulations" class="section level3">
+<h3>Running the simulations</h3>
+<p>Now that I’ve generate a schedule in a format that is easy to determine the number of resulting win/losses, I can run it in a <code>for</code> loop to generate 10,000 schedules and keep a vector containing the number of wins a team gets in each iteration.</p>
+<pre class="r"><code># create empty vector to add to
+iterations &lt;- 10000
+wins &lt;- rep(NA, iterations)
+
+teamName &lt;- &quot;Stephen&quot;
+
+# Run 10000 simulations
+for (i in c(1:iterations)){
+  schedule &lt;- createSchedule(teamName, data$team)
+  numWins &lt;- length(grep(pattern = &quot;w&quot;, schedule$result))
+  wins[i] &lt;- numWins
+}</code></pre>
+<p>Once the simulation is done, I extracted some summary statistics,,,</p>
+<pre class="r"><code># Calculate summary statistics
+minWins &lt;- min(wins)
+maxWins &lt;- max(wins)
+meanWins &lt;- round(mean(wins), 1)</code></pre>
+<p>…and rearranged the data a bit more prior to graphing it.</p>
+<pre class="r"><code># Create frequency dataframe
+wins &lt;- sort(wins)
+winDat &lt;- data.frame(iteration = c(1:iterations),
+                     wins = wins)
+winCount &lt;- dplyr::count(winDat, wins)
+winCount$percentage &lt;- round(((winCount$n/iterations) * 100), 1)</code></pre>
+<p>I then use the <code>highcharter</code> package to create an interactive visual showing the distribution of the number of wins a team would recieve given 10,000 randomly generated schedules, as well as the mean number of wins.</p>
+<pre class="r"><code># Graph
+highchart() %&gt;%
+  hc_add_series(data = winCount, &quot;column&quot;, hcaes(x = wins, y = percentage), name = &quot;Percent Chance&quot;)%&gt;%
+  hc_xAxis(plotLines = list(list(
+    value = meanWins, color = &quot;black&quot;, width = 1.5,
+    label = list(text = paste0(&quot;Average # of Wins - &quot;, meanWins)),
+    zIndex = 5
+  )),
+  title = list(text = &quot;Number of Wins&quot;)) %&gt;%
+  hc_yAxis(labels = list(format = &quot;{value} %&quot;)) %&gt;%
+  hc_tooltip(
+    pointFormat = &quot;Probability of winning {point.x} games: &lt;b&gt;{point.y}&lt;/b&gt;&lt;br/&gt;&quot;,
+    valueSuffix = &#39; %&#39;,
+    headerFormat = &quot;&quot;
+  ) %&gt;%
+  hc_title(text = &quot;Number of wins based on 10,000 simulations&quot;)</code></pre>
+<div id="htmlwidget-1" style="width:100%;height:500px;" class="highchart html-widget"></div>
+<script type="application/json" data-for="htmlwidget-1">{"x":{"hc_opts":{"title":{"text":"Number of wins based on 10,000 simulations"},"yAxis":{"title":{"text":null},"labels":{"format":"{value} %"}},"credits":{"enabled":false},"exporting":{"enabled":false},"plotOptions":{"series":{"turboThreshold":0},"treemap":{"layoutAlgorithm":"squarified"},"bubble":{"minSize":5,"maxSize":25}},"annotationsOptions":{"enabledButtons":false},"tooltip":{"delayForDisplay":10,"pointFormat":"Probability of winning {point.x} games: <b>{point.y}<\/b><br/>","valueSuffix":" %","headerFormat":""},"series":[{"group":"group","data":[{"wins":1,"n":81,"percentage":0.8,"x":1,"y":0.8},{"wins":2,"n":649,"percentage":6.5,"x":2,"y":6.5},{"wins":3,"n":2147,"percentage":21.5,"x":3,"y":21.5},{"wins":4,"n":3466,"percentage":34.7,"x":4,"y":34.7},{"wins":5,"n":2756,"percentage":27.6,"x":5,"y":27.6},{"wins":6,"n":797,"percentage":8,"x":6,"y":8},{"wins":7,"n":99,"percentage":1,"x":7,"y":1},{"wins":8,"n":5,"percentage":0,"x":8,"y":0}],"type":"column","name":"Percent Chance"}],"xAxis":{"plotLines":[{"value":4.1,"color":"black","width":1.5,"label":{"text":"Average # of Wins - 4.1"},"zIndex":5}],"title":{"text":"Number of Wins"}}},"theme":{"chart":{"backgroundColor":"transparent"}},"conf_opts":{"global":{"Date":null,"VMLRadialGradientURL":"http =//code.highcharts.com/list(version)/gfx/vml-radial-gradient.png","canvasToolsURL":"http =//code.highcharts.com/list(version)/modules/canvas-tools.js","getTimezoneOffset":null,"timezoneOffset":0,"useUTC":true},"lang":{"contextButtonTitle":"Chart context menu","decimalPoint":".","downloadJPEG":"Download JPEG image","downloadPDF":"Download PDF document","downloadPNG":"Download PNG image","downloadSVG":"Download SVG vector image","drillUpText":"Back to {series.name}","invalidDate":null,"loading":"Loading...","months":["January","February","March","April","May","June","July","August","September","October","November","December"],"noData":"No data to display","numericSymbols":["k","M","G","T","P","E"],"printChart":"Print chart","resetZoom":"Reset zoom","resetZoomTitle":"Reset zoom level 1:1","shortMonths":["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],"thousandsSep":" ","weekdays":["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]}},"type":"chart","fonts":[],"debug":false},"evals":[],"jsHooks":[]}</script>
+</div>
+<div id="interpretation-and-conclusions" class="section level3">
+<h3>Interpretation and Conclusions</h3>
+<p>The graph above shows the distribution of win given the 10,000 simulations. If for instance in the real world, my team won 3 games (something that I’m ashamed to admit actually happened),then I would say my team was fairly unlucky with how I was scheduled this year and tended to play against opponents on their “up weeks.” The average number of wins over 10,000 simulations is a little over 4, and there is only about a 29 percent chance my team wouild have gotten 3 wins or less. That means that there is a 71 percent chance my team would get MORE than 3 wins.</p>
+<p>The result of the simulations also suggests that in approximately 0.1 percent of schedules (about 10 schedules of the 10,000), I would win 8 games, far overperforming the 3 win season I had in real life.</p>
+<p>Of course, interpreting these results all come with the caveats I mentioned earlier, the biggest of which is that the weekly scores are not actually as static as the simulations suggests. While player injuries and player projections (affecting how a player would start) are held constant, things like waiver order are not. This would particularily affect the leage I was in since our waiver order would reset each week based on your team’s record. So if a team had a different schedule, it would affect which players they would pick up on the waivers, altering the scores.</p>
+<p>With those caveats in mind, I still find this method of analysis interesting and still a good rule of thumb to determine how lucky a team is getting based on their ease of schedule.</p>
+</div>
+
+    </div>
+  </article>
+
+  
+
+
+</main>
+
+      <footer class="footer">
+        <ul class="footer-links">
+          <li>
+            <a href="/index.xml" type="application/rss+xml" target="_blank">RSS feed</a>
+          </li>
+          <li>
+            <a href="https://gohugo.io/" class="footer-links-kudos">Made with <img src="/images/hugo-logo.png" width="22" height="22"></a>
+          </li>
+        </ul>
+      </footer>
+
+    </div>
+    
+
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.11.0/highlight.min.js"></script>
+
+
+
+<script src="//cdn.bootcss.com/highlight.js/9.11.0/languages/r.min.js"></script>
+<script src="//cdn.bootcss.com/highlight.js/9.11.0/languages/yaml.min.js"></script>
+<script>hljs.configure({languages: []}); hljs.initHighlightingOnLoad();</script>
+
+
+
+    
+<script src="/js/math-code.js"></script>
+<script async src="//cdn.bootcss.com/mathjax/2.7.1/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+
+
+    
+  </body>
+</html>
+
